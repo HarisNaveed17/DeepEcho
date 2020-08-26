@@ -191,6 +191,8 @@ class Dataset:
         self.entity_columns = table_meta.get('entity_columns') or []
         self.sequence_index = table_meta.get('sequence_index')
         self.context_columns = self._get_context_columns()
+        self.data = None
+        self.metadata = None
         self.model_columns = [
             column for column in self.data.columns
             if column not in self.entity_columns + self.context_columns + [self.sequence_index]
