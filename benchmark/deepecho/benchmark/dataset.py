@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import shutil
+import tempfile
 from io import BytesIO
 from urllib.parse import urljoin
 from urllib.request import urlopen
@@ -138,6 +139,31 @@ class Dataset:
 
         return evaluation_data
 
+    def _load_from_path(self, dataset_name, table_name):
+        """Load dataset from a folder."""
+        self.name = os.path.basename(dataset_name)
+        self.table_name = table_name or self.name
+        self.metadata = Metadata(os.path.join(dataset_name, 'metadata.json'))
+        self._load_table()
+
+    def _load_from_s3(self, dataset_name, table_name):
+        """Load a deepecho dataset, downloading it from s3 if necessary."""
+        self.name = dataset_name
+        self.table_name = table_name or self.name
+        self._load_metadata()
+        self._load_table()
+
+    def _load_from_zip(self, dataset_name, table_name):
+        """Load dataset from a zip file."""
+        os.chdir(os.path.dirname(dataset_name))
+        with tempfile.TemporaryDirectory() as tempdir:
+            with ZipFile(dataset_name, 'r') as zipfile:
+                zipfile.extractall(path=tempdir)
+                self.name = os.path.basename(dataset_name[:-4])
+                self.table_name = table_name or self.name
+                self.metadata = Metadata(os.path.join(tempdir, 'metadata.json'))
+                self._load_table()
+
     def _load_metadata(self):
         dataset_path = os.path.join(DATA_DIR, self.name)
         metadata_path = os.path.join(dataset_path, 'metadata.json')
@@ -151,16 +177,15 @@ class Dataset:
             self.metadata = Metadata(metadata_path)
 
     def __init__(self, dataset, table_name=None, max_entities=None, segment_size=None):
-        if os.path.isdir(dataset):
-            self.name = os.path.basename(dataset)
-            self.table_name = table_name or self.name
-            self.metadata = Metadata(os.path.join(dataset, 'metadata.json'))
-        else:
-            self.name = dataset
-            self.table_name = table_name or self.name
-            self._load_metadata()
 
-        self._load_table()
+        if os.path.exists(dataset) and dataset.endswith('.zip'):
+            self._load_from_zip(dataset, table_name)
+
+        elif os.path.isdir(dataset):
+            self._load_from_path(dataset, table_name)
+
+        else:
+            self._load_from_s3(dataset, table_name)
 
         table_meta = self.metadata.get_table_meta(self.table_name)
         self.entity_columns = table_meta.get('entity_columns') or []
