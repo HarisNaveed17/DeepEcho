@@ -64,6 +64,9 @@ class Dataset:
 
     VERSION = '0.1.1'
 
+    data = None
+    metadata = None
+
     def _load_table(self):
         columns = list(self.metadata.get_fields(self.table_name).keys())
         primary_key = self.metadata.get_primary_key(self.table_name)
@@ -159,10 +162,7 @@ class Dataset:
         with tempfile.TemporaryDirectory() as tempdir:
             with ZipFile(dataset_name, 'r') as zipfile:
                 zipfile.extractall(path=tempdir)
-                self.name = os.path.basename(dataset_name[:-4])
-                self.table_name = table_name or self.name
-                self.metadata = Metadata(os.path.join(tempdir, 'metadata.json'))
-                self._load_table()
+                self._load_from_path(dataset_name[:-4], table_name)
 
     def _load_metadata(self):
         dataset_path = os.path.join(DATA_DIR, self.name)
@@ -191,8 +191,6 @@ class Dataset:
         self.entity_columns = table_meta.get('entity_columns') or []
         self.sequence_index = table_meta.get('sequence_index')
         self.context_columns = self._get_context_columns()
-        self.data = None
-        self.metadata = None
         self.model_columns = [
             column for column in self.data.columns
             if column not in self.entity_columns + self.context_columns + [self.sequence_index]
