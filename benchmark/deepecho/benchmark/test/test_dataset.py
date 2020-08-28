@@ -1,5 +1,6 @@
 """Test uniti test for dataset class."""
 
+import os
 from unittest.mock import Mock, patch
 
 from deepecho.benchmark.dataset import Dataset
@@ -28,6 +29,8 @@ class TestDataset:
 
         # Asserts
         assert mock_dataset._load_table.called
+        assert mock_dataset.name == dataset_name
+        gm_mock.assert_called_once_with(os.path.join(dataset_name, 'metadata.json'))
 
     def test__load_from_s3(self):
         """Test ``_load_from_s3``.
@@ -48,11 +51,11 @@ class TestDataset:
 
         # Asserts
         assert mock_dataset._load_table.called
+        assert mock_dataset.name == dataset_name
 
     @patch('deepecho.benchmark.dataset.os.chdir', autospec=True)
-    @patch('deepecho.benchmark.dataset.Metadata', autospec=True)
     @patch('deepecho.benchmark.dataset.ZipFile', autospec=True)
-    def test__load_from_zip(self, gm_mock_os, gm_mock_metadata, gm_mock_ZipFile):
+    def test__load_from_zip(self, gm_mock_os, gm_mock_ZipFile):
         """Test ``_load_from_path``.
 
         The _load_from_zip is expected to:
@@ -69,7 +72,7 @@ class TestDataset:
         Dataset._load_from_zip(mock_dataset, dataset_name, table_name)
 
         # Asserts
-        mock_dataset._load_from_path.assert_called_once_with(dataset_name[:-4], None)
+        assert mock_dataset._load_from_path.called
 
     @patch('deepecho.benchmark.dataset.Dataset._load_from_path', return_value=None)
     def test___init__path(self, gm_mock):
@@ -84,12 +87,17 @@ class TestDataset:
         # Setup
         mock_dataset = Mock(set=Dataset)
         mock_dataset.data.columns = []
+        mock_dataset._get_context_columns.return_value = 'context_columns'
+
         # Run
         dataset_name = './'
         Dataset.__init__(mock_dataset, dataset_name)
 
         # Asserts
-        assert mock_dataset._load_from_path.called
+        mock_dataset._load_from_path.assert_called_once_with(dataset_name, None)
+        assert mock_dataset.context_columns == 'context_columns'
+        assert not mock_dataset._filter_entities.called
+        assert not mock_dataset._get_evaluation_data.called
 
     @patch('deepecho.benchmark.dataset.Dataset._load_from_s3', return_value=None)
     def test___init__s3(self, gm_mock):
@@ -104,12 +112,17 @@ class TestDataset:
         # Setup
         mock_dataset = Mock(set=Dataset)
         mock_dataset.data.columns = []
+        mock_dataset._get_context_columns.return_value = 'context_columns'
+
         # Run
         dataset_name = 'some_dataset'
         Dataset.__init__(mock_dataset, dataset_name)
 
         # Asserts
-        assert mock_dataset._load_from_s3.called
+        mock_dataset._load_from_s3.assert_called_once_with(dataset_name, None)
+        assert mock_dataset.context_columns == 'context_columns'
+        assert not mock_dataset._filter_entities.called
+        assert not mock_dataset._get_evaluation_data.called
 
     @patch('deepecho.benchmark.dataset.os.path.exists', return_value=True)
     @patch('deepecho.benchmark.dataset.Dataset._load_from_zip', return_value=None)
@@ -125,12 +138,17 @@ class TestDataset:
         # Setup
         mock_dataset = Mock(set=Dataset)
         mock_dataset.data.columns = []
+        mock_dataset._get_context_columns.return_value = 'context_columns'
+
         # Run
         dataset_name = '.zip'
         Dataset.__init__(mock_dataset, dataset_name)
 
         # Asserts
-        assert mock_dataset._load_from_zip.called
+        mock_dataset._load_from_zip.assert_called_once_with(dataset_name, None)
+        assert mock_dataset.context_columns == 'context_columns'
+        assert not mock_dataset._filter_entities.called
+        assert not mock_dataset._get_evaluation_data.called
 
     def test___init__segment_size(self):
         """Test ``__init__`` for passing max_entities value.
@@ -147,13 +165,18 @@ class TestDataset:
         # Setup
         mock_dataset = Mock(set=Dataset)
         mock_dataset.data.columns = []
+        mock_dataset._get_context_columns.return_value = 'context_columns'
+
         # Run
         dataset_name = './'
         segment_size = 10
         Dataset.__init__(mock_dataset, dataset_name, segment_size=segment_size)
 
         # Asserts
-        mock_dataset._get_evaluation_data.assert_called_once_with(segment_size)
+        mock_dataset._load_from_path.assert_called_once_with(dataset_name, None)
+        assert mock_dataset.context_columns == 'context_columns'
+        assert not mock_dataset._filter_entities.called
+        assert mock_dataset._get_evaluation_data.called
 
     def test___init__max_entities(self):
         """Test ``__init__`` for passing max_entities value.
@@ -170,10 +193,15 @@ class TestDataset:
         # Setup
         mock_dataset = Mock(set=Dataset)
         mock_dataset.data.columns = []
+        mock_dataset._get_context_columns.return_value = 'context_columns'
+
         # Run
         dataset_name = './'
         max_entities = 10
         Dataset.__init__(mock_dataset, dataset_name, max_entities=max_entities)
 
         # Asserts
-        mock_dataset._filter_entities.assert_called_once_with(max_entities)
+        mock_dataset._load_from_path.assert_called_once_with(dataset_name, None)
+        assert mock_dataset.context_columns == 'context_columns'
+        assert mock_dataset._filter_entities.called
+        assert not mock_dataset._get_evaluation_data.called
