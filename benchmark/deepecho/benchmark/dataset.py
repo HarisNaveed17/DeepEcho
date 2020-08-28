@@ -158,7 +158,7 @@ class Dataset:
 
     def _load_from_zip(self, dataset_name, table_name):
         """Load dataset from a zip file."""
-         with tempfile.TemporaryDirectory() as tempdir:
+        with tempfile.TemporaryDirectory() as tempdir:
             with ZipFile(dataset_name, 'r') as zipfile:
                 zipfile.extractall(path=tempdir)
                 self._load_from_path(os.path.join(tempdir, dataset_name[:-4]), table_name)
