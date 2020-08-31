@@ -263,16 +263,32 @@ def make_dataset(name, data, table_name=None, entity_columns=None,
     if isinstance(data, str):
         data = pd.read_csv(data)
 
-    base_path = os.path.join(datasets_path, name)
-    if os.path.exists(base_path):
-        shutil.rmtree(base_path)
+    if zipped:
+        cwd = os.getcwd()
 
-    os.makedirs(base_path, exist_ok=True)
+        with tempfile.TemporaryDirectory() as tempdir:
+            make_dataset(name, data, table_name, entity_columns, sequence_index,
+                         datasets_path=tempdir, zipped=False)
 
-    table_name = table_name or name
+            os.chdir('..')
+            shutil.make_archive(name, 'zip', name)
+            zip_path = os.path.join(cwd, name + '.zip')
 
-    cwd = os.getcwd()
-    try:
+            if os.path.exists(zip_path):
+                os.remove(zip_path)
+            shutil.move(name + '.zip', cwd)
+            os.chdir(cwd)
+            LOGGER.info('Zip file %s generated in folder %s', name, cwd)
+
+    else:
+        base_path = os.path.join(datasets_path, name)
+        if os.path.exists(base_path):
+            shutil.rmtree(base_path)
+
+        os.makedirs(base_path, exist_ok=True)
+
+        table_name = table_name or name
+
         os.chdir(base_path)
         csv_name = table_name + '.csv'
         data.to_csv(csv_name, index=False)
@@ -288,12 +304,5 @@ def make_dataset(name, data, table_name=None, entity_columns=None,
         with open('metadata.json', 'w') as metadata_file:
             json.dump(meta_dict, metadata_file, indent=4)
 
-        if zipped is False:
+        if not datasets_path.startswith('/tmp/'):
             LOGGER.info('Dataset %s generated in folder %s', name, base_path)
-        else:
-            os.chdir('..')
-            shutil.make_archive(name, 'zip', name)
-            shutil.rmtree(name)
-            LOGGER.info('Zip file %s generated in folder %s', name, base_path)
-    finally:
-        os.chdir(cwd)

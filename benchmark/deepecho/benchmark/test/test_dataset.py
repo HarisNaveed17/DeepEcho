@@ -14,10 +14,14 @@ class TestDataset:
         """Test ``_load_from_path``.
 
         The _load_from_path is expected to:
+        - Initialize parameters according to input variables. Like 'self.name'
         - call ```self._load_table()`` method.
+        - call ```Metadata``` method.
 
         Side Effects
+        - Variable 'self.name' equal to input variable `dataset_name`
         - ``self._load_table()`` is called.
+        - ```Metadata`` is called once with the expected parameters.
         """
         # Setup
         mock_dataset = Mock(spec=Dataset)
@@ -36,10 +40,12 @@ class TestDataset:
         """Test ``_load_from_s3``.
 
         The _load_from_s3 is expected to:
+        - Initialize parameters according to input variables. Like 'self.name'
         - call ```self._load_table()`` method.
 
         Side Effects
         - ``self._load_table()`` is called.
+        - Variable 'self.name' equal to input variable `dataset_name`
         """
         # Setup
         mock_dataset = Mock(spec=Dataset)
@@ -56,14 +62,15 @@ class TestDataset:
     @patch('deepecho.benchmark.dataset.os.chdir', autospec=True)
     @patch('deepecho.benchmark.dataset.ZipFile', autospec=True)
     def test__load_from_zip(self, gm_mock_os, gm_mock_ZipFile):
-        """Test ``_load_from_path``.
+        """Test ``_load_from_zip``.
 
         The _load_from_zip is expected to:
         - call ```self._load_from_path()`` method.
 
         Side Effects
-        - ``self._load_from_path()`` is called git the given values.
+        - ``self._load_from_path()`` is called with the given values.
         """
+        # Setup
         mock_dataset = Mock(spec=Dataset)
         dataset_name = 'test.zip'
         table_name = None
@@ -80,9 +87,15 @@ class TestDataset:
 
         The __init__ method is expected to:
         - call ```self._load_from_path`` method.
+        - Initialize parameters. Like 'self.context_columns'.
+        - Do not call method ```_filter_entities```.
+        - Do not call method ```_get_evaluation_data```.
 
         Side Effects
         - ``self._load_from_path()`` is called.
+        -  'self.context_columns' variable equal to the defined value.
+        - ```_filter_entities``` method is not called.
+        - ```_get_evaluation_data``` method is not called.
         """
         # Setup
         mock_dataset = Mock(set=Dataset)
@@ -101,13 +114,19 @@ class TestDataset:
 
     @patch('deepecho.benchmark.dataset.Dataset._load_from_s3', return_value=None)
     def test___init__s3(self, gm_mock):
-        """Test ``__init__`` for dataset stored in s3.
+        """Test ``__init__`` for a dataset stored in s3.
 
         The __init__ method is expected to:
         - call ```self._load_from_s3`` method.
+        - Initialize parameters. Like 'self.context_columns'.
+        - Do not call method ```_filter_entities```.
+        - Do not call method ```_get_evaluation_data```.
 
         Side Effects
         - ``self._load_from_s3()`` is called.
+        -  'self.context_columns' variable equal to the defined value.
+        - ```_filter_entities``` method is not called.
+        - ```_get_evaluation_data``` method is not called.
         """
         # Setup
         mock_dataset = Mock(set=Dataset)
@@ -131,9 +150,15 @@ class TestDataset:
 
         The __init__ method is expected to:
         - call ```self._load_from_zip`` method.
+        - Initialize parameters. Like 'self.context_columns'.
+        - Do not call method ```_filter_entities```.
+        - Do not call method ```_get_evaluation_data```.
 
         Side Effects
         - ``self._load_from_zip()`` is called.
+        -  'self.context_columns' variable equal to the defined value.
+        - ```_filter_entities``` method is not called.
+        - ```_get_evaluation_data``` method is not called.
         """
         # Setup
         mock_dataset = Mock(set=Dataset)
@@ -156,11 +181,18 @@ class TestDataset:
         This test calls the __init__ method passig a max_entities value,
         is necesary provide a way to get the dataset, that means pass a
         directory, s3 dataset or zip dataset. That test provides a path.
+
         The __init__ method is expected to:
-        - call ```self._filter_entities`` method.
+        - call ```self._load_from_path`` method.
+        - Initialize parameters. Like 'self.context_columns'.
+        - Do not call method ```_filter_entities```.
+        - Call method ```_get_evaluation_data```.
 
         Side Effects
-        - ``self._get_evaluation_data()`` is called with the given value.
+        - ``self._load_from_path()`` is called.
+        -  'self.context_columns' variable equal to the defined value.
+        - ```_filter_entities``` method is not called.
+        - ```_get_evaluation_data``` method is called.
         """
         # Setup
         mock_dataset = Mock(set=Dataset)
@@ -184,11 +216,18 @@ class TestDataset:
         This test calls the __init__ method passig a max_entities value,
         is necesary provide a way to get the dataset, that means pass a
         directory, s3 dataset or zip dataset. That test provides a path.
+
         The __init__ method is expected to:
-        - call ```self._filter_entities`` method.
+        - call ```self._load_from_path`` method.
+        - Initialize parameters. Like 'self.context_columns'.
+        - Call method ```_filter_entities```.
+        - Do not call method ```_get_evaluation_data```.
 
         Side Effects
-        - ``self._filter_entities()`` is called with the given value.
+        - ``self._load_from_path()`` is called.
+        -  'self.context_columns' variable equal to the defined value.
+        - ```_filter_entities``` method is called.
+        - ```_get_evaluation_data``` method is not called.
         """
         # Setup
         mock_dataset = Mock(set=Dataset)
